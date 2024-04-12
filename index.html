@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Number Game</title>
+    <link rel="stylesheet" href="./style.css">
+    <link rel="icon" href="./favicon.ico" type="image/x-icon">
+    <script
+    src="https://code.jquery.com/jquery-3.7.1.slim.min.js"
+    integrity="sha256-kmHvs0B+OpCW5GVHUNjv9rOmY0IvSIRcf7zGUDTDQM8="
+    crossorigin="anonymous"></script>
+      <script>
+        $(window).on("load", () => {
+            let ROWNUM = 0;
+            let ROW;
+            let ORIGROW;
+            let GLOBALMAX;
+            let OVER;
+            function startNew(row) {
+                ORIGROW = [...row];
+                TARGET = [...row];
+                TARGET.reverse();
+                $("body").removeClass("won")
+                $("#factors").empty();
+                $(".row").slice(1, -1).remove();
+                OVER = false;
+                GLOBALMAX = -Infinity;
+                for (let el of row) {
+                    GLOBALMAX = Math.max(el, GLOBALMAX);
+                }
+                addNewRow(row);
+            }
+            function arraysEqual(a, b) {
+                if (a === b) return true;
+                if (a == null || b == null) return false;
+                if (a.length !== b.length) return false;
+                            
+                for (var i = 0; i < a.length; ++i) {
+                  if (a[i] !== b[i]) return false;
+                }
+                return true;
+            }              
+            function addNewRow(row) {
+                let $status = $("#status")
+                if (arraysEqual(row, TARGET)) {
+                    $status.text(`You won in ${ROWNUM} moves!`)
+                    $("body").addClass("won");
+                    $("#factors").empty();
+                    OVER = true;
+                    return;
+                }
+                ROW = row;
+                ROWNUM++;
+                let $div = $('<div/>').addClass("row");
+                for (let i = 0; i < row.length; i++) {
+                    let el = row[i];
+                    $div.append($("<span/>").addClass("active rowbutton").data("rowindex", i).data("val", el).data("row", ROWNUM).on("click", (e) => {
+                        let t = $(e.target);
+                        let rowindex = t.data("rowindex")
+                        let total = t.data("val");
+                        let row = t.data("row")
+                        if (OVER || row != ROWNUM) {
+                            return;
+                        }
+                        $(".clicked").removeClass("clicked")
+                        t.addClass("clicked")
+                        let $fac = $("#factors");
+                        $fac.empty();
+                        if (rowindex > 0 && ROW[rowindex-1] + ROW[rowindex] <= GLOBALMAX) {
+                            $fac.append($(`<span>merge left</span>`).addClass("rowbutton active").data("rowindex", rowindex).on("click", (e) => {
+                                let t = $(e.target);
+                                if (OVER) {
+                                    return;
+                                }
+                                $(".clicked").removeClass("clicked")
+                                $(".active").removeClass("active")
+                                let rowindex = t.data("rowindex");
+                                let newrow = [];
+                                for (let i = 0; i < ROW.length; i++) {
+                                    if (i == rowindex - 1) {
+                                        continue;
+                                    } else if (i == rowindex) {
+                                        newrow.push(ROW[rowindex] + ROW[rowindex-1])
+                                    }
+                                    else {
+                                        newrow.push(ROW[i])
+                                    }
+                                }
+                                addNewRow(newrow);
+                            }))
+                        }
+                        for (let i = 1; i < total; i++) {
+                            let v1 = i;
+                            let v2 = total - i;
+                            if (v1 == v2 || ROW.includes(v1) || ROW.includes(v2)) {
+                                continue;
+                            }
+                            $fac.append($(`<span>${v1}/${v2}</span>`).addClass("rowbutton active").data("val1", v1).data("val2", v2).on("click", (e) => {
+                                let t = $(e.target);
+                                if (OVER) {
+                                    return;
+                                }
+                                $(".clicked").removeClass("clicked")
+                                $(".active").removeClass("active")
+                                let v1 = t.data("val1");
+                                let v2 = t.data("val2");
+                                let newrow = [];
+                                for (let i = 0; i < ROW.length; i++) {
+                                    if (i == rowindex) {
+                                        newrow.push(v1);
+                                        newrow.push(v2);
+                                    }
+                                    else {
+                                        newrow.push(ROW[i])
+                                    }
+                                }
+                                addNewRow(newrow);
+                            }))
+                        }
+                        if (rowindex < ROW.length - 1 && ROW[rowindex+1] + ROW[rowindex] <= GLOBALMAX) {
+                            $fac.append($(`<span>merge right</span>`).addClass("rowbutton active").data("rowindex", rowindex).on("click", (e) => {
+                                let t = $(e.target);
+                                if (OVER) {
+                                    return;
+                                }
+                                $(".clicked").removeClass("clicked")
+                                $(".active").removeClass("active")
+                                let rowindex = t.data("rowindex");
+                                let newrow = [];
+                                for (let i = 0; i < ROW.length; i++) {
+                                    if (i == rowindex + 1) {
+                                        continue;
+                                    } else if (i == rowindex) {
+                                        newrow.push(ROW[rowindex] + ROW[rowindex+1])
+                                    }
+                                    else {
+                                        newrow.push(ROW[i])
+                                    }
+                                }
+                                addNewRow(newrow);
+                            }))
+                        }
+
+                    }).append(el))
+                }
+                $div.insertBefore($("#factors"))
+                $("#factors").empty();
+                $("#status").text(`Attempt ${ROWNUM}. You're trying to get to [${TARGET}]`)
+            }
+            $("#wtf").on("click", () => {
+                $("dialog")[0].showModal();
+            })
+            function genArr() {
+                let arr;
+                while (true) {
+                    arr = []
+                    let len = Math.floor(Math.random() * 3) + 2
+                    for (let i = 0; i < len; i++) {
+                        arr.push(Math.floor(Math.random() * 9) + 1);
+                    }
+                    let s = new Set(arr);
+                    if (s.size == arr.length) {
+                        break;
+                    }
+                }
+                return arr;
+            }
+            $("#restart").on("click", () => {
+                startNew(genArr());
+            })
+            document.querySelector("dialog button").addEventListener("click", () => {
+                $("dialog")[0].close();
+            })
+            startNew([1,6])
+        })
+    </script>
+  </head>
+  <body>
+    <div class="container">
+        <div id="header" class="row"><span id="status"></span><span id="wtf">What is this?</span><span id="restart">Restart</span></div>
+        <dialog>
+            <button autofocus>Close</button>
+            <p>In this game you need to try to reverse a list of numbers. You do this by splitting an joining the numbers subject to some constraints:
+                <li>You can't create a number larger than the largest number in the initial list</li>
+                <li>You can never have the same number in the list twice</li>
+                You can move numbers around by splitting and merging.
+
+                Enjoy!
+            </p>
+          </dialog>          
+        <div id="factors" class="row"></div>
+    </div>
+  </body>
+</html>
