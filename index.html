@@ -13,13 +13,14 @@
     crossorigin="anonymous"></script>
       <script>
         $(window).on("load", () => {
-            let ROWNUM = 0;
+            let ROWNUM;
             let ROW;
             let ORIGROW;
             let GLOBALMAX;
             let OVER;
             function startNew(row) {
                 ORIGROW = [...row];
+                ROWNUM = 0;
                 TARGET = [...row];
                 TARGET.reverse();
                 $("body").removeClass("won")
