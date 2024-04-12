@@ -15,17 +15,22 @@
         $(window).on("load", () => {
             let ROWNUM;
             let ROW;
+            let ROWSTACK;
             let ORIGROW;
             let GLOBALMAX;
             let OVER;
             function startNew(row) {
                 ORIGROW = [...row];
                 ROWNUM = 0;
+                ROWSTACK = [];
                 TARGET = [...row];
                 TARGET.reverse();
                 $("body").removeClass("won")
                 $("#factors").empty();
                 $(".row").slice(1, -1).remove();
+                var url = new URL(location.href);
+                url.searchParams.set("numbers", `${row.join("~")}`);
+                window.history.replaceState(null, null, "?" + url.searchParams.toString());
                 OVER = false;
                 GLOBALMAX = -Infinity;
                 for (let el of row) {
@@ -54,6 +59,7 @@
                 }
                 ROW = row;
                 ROWNUM++;
+                ROWSTACK.push(row);
                 let $div = $('<div/>').addClass("row");
                 for (let i = 0; i < row.length; i++) {
                     let el = row[i];
@@ -69,7 +75,7 @@
                         t.addClass("clicked")
                         let $fac = $("#factors");
                         $fac.empty();
-                        if (rowindex > 0 && ROW[rowindex-1] + ROW[rowindex] <= GLOBALMAX) {
+                        if (rowindex > 0 && ROW[rowindex-1] + ROW[rowindex] <= GLOBALMAX && !ROW.includes(ROW[rowindex-1] + ROW[rowindex])) {
                             $fac.append($(`<span>merge left</span>`).addClass("rowbutton active").data("rowindex", rowindex).on("click", (e) => {
                                 let t = $(e.target);
                                 if (OVER) {
@@ -120,7 +126,7 @@
                                 addNewRow(newrow);
                             }))
                         }
-                        if (rowindex < ROW.length - 1 && ROW[rowindex+1] + ROW[rowindex] <= GLOBALMAX) {
+                        if (rowindex < ROW.length - 1 && ROW[rowindex+1] + ROW[rowindex] <= GLOBALMAX && !ROW.includes(ROW[rowindex+1] + ROW[rowindex])) {
                             $fac.append($(`<span>merge right</span>`).addClass("rowbutton active").data("rowindex", rowindex).on("click", (e) => {
                                 let t = $(e.target);
                                 if (OVER) {
@@ -143,8 +149,27 @@
                                 addNewRow(newrow);
                             }))
                         }
-
+                        e.target.scrollIntoView();
+                        
                     }).append(el))
+                }
+                if (ROWNUM != 1) {
+                    $div.append($("<span>Undo</span>").addClass("active rowbutton").data("row", ROWNUM).on("click", (e) => {
+                        let t = $(e.target);
+                        let row = t.data("row")
+                        if (OVER || row != ROWNUM) {
+                            return;
+                        }
+                        ROWNUM--;
+                        ROWSTACK.pop()
+                        ROW = ROWSTACK[ROWNUM-1];
+                        $("#factors").empty()
+                        $(".clicked").removeClass("clicked")
+                        $(".active").removeClass("active")
+                        $("#status").text(`Attempt ${ROWNUM}. You're trying to get to [${TARGET}]`)
+                        $(".container > :nth-last-child(2)").remove()
+                        $(".container > :nth-last-child(2)").children().addClass("active")
+                    }));
                 }
                 $div.insertBefore($("#factors"))
                 $("#factors").empty();
@@ -174,7 +199,26 @@
             document.querySelector("dialog button").addEventListener("click", () => {
                 $("dialog")[0].close();
             })
-            startNew([1,6])
+            const url = new URL(location.href);
+            if (url.searchParams.has("numbers")) {
+                let input = url.searchParams.get("numbers");
+                const elements = input.split("~");
+                let arr = [];
+                for (let el of elements) {
+                    let asint = parseInt(el);
+                    if (asint !== NaN && asint > 0) {
+                        arr.push(asint);
+                    }
+                }
+                let s = new Set(arr);
+                if (arr.length > 1 && s.size == arr.length) {
+                    startNew(arr);
+                } else {
+                    startNew(genArr());
+                }
+            } else {
+                startNew(genArr());
+            }
         })
     </script>
   </head>
